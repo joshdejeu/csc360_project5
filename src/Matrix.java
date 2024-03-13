@@ -1,3 +1,4 @@
+import javax.lang.model.type.ArrayType;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,14 +12,12 @@ public class Matrix {
     public int resources; // aka Columns
     private int row_index = 0;
     private ArrayList<ArrayList<Integer>> data;
-    private ArrayList<Integer> array_of_requests;
 
     // Constructor
     public Matrix(int rows, int columns) {
         this.processes = rows;
         this.resources = columns;
         this.data = createDynamicMatrix(this.processes, this.resources);
-        this.array_of_requests = new ArrayList<>(0);
     }
 
     public static ArrayList<ArrayList<Integer>> createDynamicMatrix(int rows, int columns) {
@@ -33,6 +32,38 @@ public class Matrix {
         }
 
         return matrix;
+    }
+
+    public void printRequest() {
+        // ANSI escape sequence for underline
+        String underlineStart = "\u001B[4m";
+        String underlineEnd = "\u001B[0m";
+        out.print("\n    ");
+        for (int i = 'A'; i < this.resources + 'A'; i++) {
+            out.print(underlineStart + (char) i + underlineEnd + " ");
+        }
+        out.println();
+        // for every process
+        for (int i = 0; i < this.data.size(); i++) {
+            out.print("p" + this.data.get(i).get(0) + ": ");
+            // for every resource
+            for (int j = 0; j < this.resources; j++) {
+                out.print(this.data.get(i).get(j + 1) + " ");
+            }
+            out.println();
+        }
+    }
+
+    // used to create the need matrix (difference of max and allocation)
+    public void differenceOfMatrices(ArrayList<ArrayList<Integer>> allocation, ArrayList<ArrayList<Integer>> max) {
+        // for each process
+        for (int i = 0; i < this.processes; i++) {
+            // for each resource
+            for (int j = 0; j < this.resources; j++) {
+                int num_of_processes_needed_to_reach_max = max.get(i).get(j) - allocation.get(i).get(j);
+                this.data.get(i).set(j, num_of_processes_needed_to_reach_max);
+            }
+        }
     }
 
     public void setMatrixValue(int row, int column, int value) {
@@ -85,33 +116,39 @@ public class Matrix {
         return data;
     }
 
-    public void populateRequestsFromTxt(BufferedReader br, String line) throws IOException, NumberFormatException {
+    public void setData(ArrayList<ArrayList<Integer>> newData) {
+        this.data = newData;
+    }
+
+    public ArrayList<ArrayList<Integer>> populateRequestsFromTxt(BufferedReader br, String line) throws IOException, NumberFormatException {
+        ArrayList<ArrayList<Integer>> queue_of_requests = new ArrayList<ArrayList<Integer>>(0);
         do {
-            ArrayList<Integer> request_numbers = new ArrayList<>(this.resources);
+            // {process id, requested A, requested B, requested C, requested D}
+            ArrayList<Integer> request = new ArrayList<>(this.resources);
             // split the string by spaces
             String[] numbers_as_string = line.split("\\s+|:");
-            int order_number = Integer.parseInt(numbers_as_string[0]);
-            // E.g. "3:6 7 4 3" -> [6, 7, 4, 3]
-            for (int i = 1; i < numbers_as_string.length; i++) {
-                request_numbers.add(Integer.parseInt(numbers_as_string[i]));
+            // E.g. "3:6 7 4 3" -> [3, 6, 7, 4, 3]
+            for (int i = 0; i < numbers_as_string.length; i++) {
+                request.add(Integer.parseInt(numbers_as_string[i]));
             }
-            this.addRequestInOrder(order_number, request_numbers, array_of_requests);
+            queue_of_requests.add(request);
             line = br.readLine();
         }
         // add all numbers into allocation matrix until empty line detected
         while (line != null && !line.trim().isEmpty());
-    }
-
-    private void addRequestInOrder(int order_number, ArrayList<Integer> data, ArrayList<Integer> array_of_requests) {
-        // Find the index where the number should be inserted
-        int index = Collections.binarySearch(array_of_requests, order_number);
-//        out.println(order_number + " " + array_of_requests + " "); // Uncomment to see state of request array
-        // If index -1 make it insertion point
-        if (index < 0) {
-            index = -index - 1;
-        }
-        this.array_of_requests.add(index, order_number);
-        this.data.add(index, data); // requests will be sorted before simulation with this step
+        return queue_of_requests;
     }
 
 }
+//    adds data in order of proccess_id to array_of_req
+//    private void addRequestToQueue(int process_id, ArrayList<Integer> data, ArrayList<Integer> array_of_requests) {
+//        // Find the index where the number should be inserted
+//        int index = Collections.binarySearch(array_of_requests, order_number);
+////        out.println(order_number + " " + array_of_requests + " "); // Uncomment to see state of request array
+//        // If index -1 make it insertion point
+//        if (index < 0) {
+//            index = -index - 1;
+//        }
+//        this.array_of_requests.add(index, order_number);
+//        this.data.add(index, data); // requests will be sorted before simulation with this step
+//    }
