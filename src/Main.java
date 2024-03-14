@@ -8,17 +8,9 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
+import java.time.format.ResolverStyle;
 import java.util.ArrayList; //vector equivalent
 import java.util.Collections;
-//2:0 4 2 0
-//3:0 4 2 0
-//3:0 4 2 0
-//3:0 4 2 0
-//1:0 4 2 0
-//1:0 4 2 0
-//4:0 4 2 0
-//5:0 4 2 0
-//9:0 4 2 0
 
 public class Main {
     public static final String RESET = "\u001B[0m";
@@ -107,9 +99,12 @@ public class Main {
         matrix_request.printRequest();
 
         // Compute if the request can be granted.
-        boolean areAllRequestsWithinClaim = checkRequestAgainstNeed(matrix_request, matrix_need);
-        out.printf("All requests are can %s be granted\n", (areAllRequestsWithinClaim ? "" : "NOT"));
-
+        try {
+            boolean areAllRequestsWithinClaim = checkRequestAgainstNeed(matrix_request, matrix_need);
+            out.printf("All requests are can %s be granted\n", (areAllRequestsWithinClaim ? "" : "NOT"));
+        } catch (IllegalArgumentException e) {
+            out.println(e.getMessage());
+        }
 
         // Compute the new available vector
         printVector("*NEW* Available", vector_available);
@@ -192,12 +187,13 @@ public class Main {
     public static boolean checkRequestAgainstNeed(Matrix request, Matrix need) {
         boolean allRequestsGood = true;
         for (int y = 0; y < request.getData().size(); y++) {
-
             // [3:1 5 6 3] -> id = 3
             int request_process_id = request.getData().get(y).getFirst();
             ArrayList<Integer> request_x = request.getData().get(y);
+            if (request_process_id > need.processes) {
+                throw new IllegalArgumentException(String.format("\n%sProcess ID %d out of range of Matrix need.processes\n%s%s", RED, request_process_id, request_x, RESET));
+            }
             ArrayList<Integer> need_x = need.getData().get(request_process_id - 1);
-
             ArrayList<Boolean> result = new ArrayList<>();
             for (int i = 0; i < need_x.size(); i++) {
                 result.add(request_x.get(i + 1) <= need_x.get(i));
@@ -210,7 +206,6 @@ public class Main {
             }
             out.printf("Request of [p%d] %s\n", request_process_id, (allRequestsGood ? "Good" : "Bad"));
         }
-
         return allRequestsGood;
     }
 }
