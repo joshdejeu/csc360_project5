@@ -88,9 +88,9 @@ public class Main {
         out.println("\t-- The data this simulation will be running --\n");
         out.printf("Number of Processes: %d\n", number_of_processes);
         out.printf("Number of Resources: %d\n", number_of_resources);
-        printMatrix("Allocation", matrix_allocation);
-        printMatrix("Max", matrix_max);
-        printMatrix("Need", matrix_need);
+        matrix_allocation.printMatrix("Allocation");
+        matrix_max.printMatrix("Max");
+        matrix_need.printMatrix("Need");
         printVector("Available", vector_available);
 
         // SAFETY CHECK
@@ -107,6 +107,8 @@ public class Main {
         matrix_request.printRequest();
 
         // Compute if the request can be granted.
+        boolean areAllRequestsWithinClaim = checkRequestAgainstNeed(matrix_request, matrix_need);
+        out.printf("All requests are can %s be granted\n", (areAllRequestsWithinClaim ? "" : "NOT"));
 
 
         // Compute the new available vector
@@ -185,9 +187,30 @@ public class Main {
         out.println();
     }
 
-    public static void printMatrix(String title, Matrix matrix) {
-        out.printf("\n%s Matrix:", title);
-        matrix.printMatrix();
-    }
 
+    // TRUE if request of Process i is <= to Need of Process i
+    public static boolean checkRequestAgainstNeed(Matrix request, Matrix need) {
+        boolean allRequestsGood = true;
+        for (int y = 0; y < request.getData().size(); y++) {
+
+            // [3:1 5 6 3] -> id = 3
+            int request_process_id = request.getData().get(y).getFirst();
+            ArrayList<Integer> request_x = request.getData().get(y);
+            ArrayList<Integer> need_x = need.getData().get(request_process_id - 1);
+
+            ArrayList<Boolean> result = new ArrayList<>();
+            for (int i = 0; i < need_x.size(); i++) {
+                result.add(request_x.get(i + 1) <= need_x.get(i));
+            }
+            for (Boolean value : result) {
+                if (!value) {
+                    allRequestsGood = false;
+                    break;
+                }
+            }
+            out.printf("Request of [p%d] %s\n", request_process_id, (allRequestsGood ? "Good" : "Bad"));
+        }
+
+        return allRequestsGood;
+    }
 }

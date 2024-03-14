@@ -25,6 +25,7 @@ public class Matrix {
     }
 
     // used to create the need matrix (difference of max and allocation)
+    // returns C = (A - B)
     public static Matrix differenceOfMatrices(Matrix m_max, Matrix m_allocation) {
         // for each process
         Matrix m_difference = new Matrix(processes, resources);
@@ -93,10 +94,11 @@ public class Matrix {
             }
             out.println();
         }
+        out.println();
     }
 
-    public void printMatrix() {
-        // ANSI escape sequence for underline
+    public void printMatrix(String title) {
+        out.printf("\n%s Matrix:", title);
         out.print("\n    ");
         for (int i = 'A'; i < resources + 'A'; i++) {
             out.print(underlineStart + (char) i + underlineEnd + " ");
