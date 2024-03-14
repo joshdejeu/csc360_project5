@@ -10,12 +10,7 @@ public class Matrix {
     public static int processes; // aka Rows
     public static int resources; // aka Columns
     public int row_index = 0;
-    private ArrayList<ArrayList<Integer>> data;
-
-    // Default Constructor
-    public Matrix() {
-        this.data = createDynamicMatrix(processes, resources);
-    }
+    public ArrayList<ArrayList<Integer>> data;
 
     // Constructor
     public Matrix(int rows, int columns) {
@@ -32,7 +27,7 @@ public class Matrix {
         for (int i = 0; i < processes; i++) {
             // for each resource
             for (int j = 0; j < resources; j++) {
-                int num_of_processes_needed_to_reach_max = m_max.getData().get(i).get(j) - m_allocation.getData().get(i).get(j);
+                int num_of_processes_needed_to_reach_max = m_max.data.get(i).get(j) - m_allocation.data.get(i).get(j);
                 m_difference.data.get(i).set(j, num_of_processes_needed_to_reach_max);
             }
         }
@@ -53,52 +48,29 @@ public class Matrix {
         return matrix;
     }
 
-    public void populateMatrixFromTxt(BufferedReader br, String line, boolean isRequest) throws IOException, NumberFormatException {
-        ArrayList<ArrayList<Integer>> queue_of_requests = new ArrayList<>(0);
+    // sets current object matrix size to whatever is currently statically stored in "resources" and "processes"
+    public Matrix resizeMatrix() {
+        this.data = new Matrix(processes, resources).data;
+        return this;
+    }
+
+    public void populateMatrixFromTxt(BufferedReader br, String line) throws IOException, NumberFormatException {
         do {
             // split the string by " " and ":"
-            String[] numbers_as_string = line.split("\\s+|:");
-            if (isRequest) {
-                // {process id, requested A, requested B, requested C, requested D}
-                ArrayList<Integer> request = new ArrayList<>(resources);
-                // split the string by spaces
-                // E.g. "3:6 7 4 3" -> [3, 6, 7, 4, 3]
-                for (String s : numbers_as_string) {
-                    request.add(Integer.parseInt(s));
-                }
-                queue_of_requests.add(request);
-                this.data = queue_of_requests;
-            } else {
-                // parse each string element and add it to the array
-                for (int i = 0; i < resources; i++) {
-                    this.data.get(this.row_index).set(i, Integer.parseInt(numbers_as_string[i]));
-                }
-                this.row_index++;
+            String[] numbers_as_string = line.split(" ");
+            // parse each string element and add it to the array
+            for (int i = 0; i < resources; i++) {
+                this.data.get(this.row_index).set(i, Integer.parseInt(numbers_as_string[i]));
             }
+            this.row_index++;
             line = br.readLine();
         }
         // add all numbers into allocation matrix until empty line detected
         while (line != null && !line.trim().isEmpty());
     }
 
-    public void printRequest() {
-        out.print("\nRequest Matrix:\n\t");
-        for (int i = 'A'; i < resources + 'A'; i++, out.print(underlineStart + (char) (i - 1) + underlineEnd + " ")) ;
-        out.println();
-        // for every process
-        for (ArrayList<Integer> datum : this.data) {
-            out.print("p" + datum.getFirst() + ": ");
-            // for every resource
-            for (int j = 0; j < resources; j++) {
-                out.print(datum.get(j + 1) + " ");
-            }
-            out.println();
-        }
-        out.println();
-    }
-
     public void printMatrix(String title) {
-        out.printf("\n%s Matrix:", title);
+        out.printf("\nThe %s Matrix is...", title);
         out.print("\n    ");
         for (int i = 'A'; i < resources + 'A'; i++) {
             out.print(underlineStart + (char) i + underlineEnd + " ");
@@ -114,17 +86,14 @@ public class Matrix {
     }
 
     // deep copy
-    public Matrix clone() {
+    public Matrix deepCopy() {
         Matrix deepCopy = new Matrix(processes, resources);
         for (int i = 0; i < processes; i++) {
             for (int j = 0; j < resources; j++) {
-                deepCopy.getData().get(i).set(j, this.data.get(i).get(j));
+                deepCopy.data.get(i).set(j, this.data.get(i).get(j));
             }
         }
         return deepCopy;
     }
 
-    public ArrayList<ArrayList<Integer>> getData() {
-        return data;
-    }
 }

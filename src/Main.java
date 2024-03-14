@@ -8,7 +8,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
-import java.time.format.ResolverStyle;
 import java.util.ArrayList; //vector equivalent
 import java.util.Collections;
 
@@ -16,98 +15,81 @@ public class Main {
     public static final String RESET = "\u001B[0m";
     public static final String GREEN = "\u001B[32m";
     public static final String RED = "\u001B[31m";
+    public static final String underlineStart = "\u001B[4m";
+    public static final String underlineEnd = "\u001B[0m";
 
     public static void main(String[] args) {
         String filePath = "s1.txt";
         //        String filePath = args[1];
         int data_section = 1; // a "section" is in-between empty lines in the txt file
 
-        int number_of_processes = 0;
-        int number_of_resources = 0;
-
         // (initially empty while we find n and m)
         Matrix matrix_allocation = new Matrix(0, 0); // n x m allocation matrix
         Matrix matrix_max = new Matrix(0, 0); // n x m max matrix
-        Matrix matrix_need = new Matrix(0, 0); // n x m need matrix
 
         ArrayList<Integer> vector_available = new ArrayList<>(0); // A 1 x m available vector
-        Matrix matrix_request = new Matrix(0, 0); // A i : 1 x m request vector
+        ArrayList<Integer> vector_request = new ArrayList<>(0); // A i : 1 x m request vector
 
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = br.readLine()) != null) {
                 // Ignore empty lines
                 if (!line.trim().isEmpty()) {
-                    switch (data_section) {
+                    switch (data_section++) {
                         //  Number of processes: n
-                        case 1 -> number_of_processes = Integer.parseInt(line);
+                        case 1 -> Matrix.processes = Integer.parseInt(line);
                         //  Number of resource types: m
-                        case 2 -> {
-                            number_of_resources = Integer.parseInt(line);
-                            Matrix.processes = number_of_processes;
-                            Matrix.resources = number_of_resources;
-                            // Resize matrices because we now know n AND m
-                            matrix_allocation = new Matrix();
-                            matrix_max = new Matrix();
-                        }
+                        case 2 -> Matrix.resources = Integer.parseInt(line);
+                        // Resize matrices because we now know n AND m
                         // An n x m allocation matrix
-                        case 3 -> matrix_allocation.populateMatrixFromTxt(br, line, false);
-                        // An n x m max matrix+
-                        case 4 -> {
-                            matrix_max.populateMatrixFromTxt(br, line, false);
-                            matrix_need = Matrix.differenceOfMatrices(matrix_max, matrix_allocation);
-                        }
+                        case 3 -> matrix_allocation.resizeMatrix().populateMatrixFromTxt(br, line);
+                        // An n x m max matrix
+                        case 4 -> matrix_max.resizeMatrix().populateMatrixFromTxt(br, line);
                         // A 1 x m available vector
-                        case 5 -> {
-                            vector_available = new ArrayList<>(number_of_resources);
-                            String[] numbers_as_string = line.split(" "); // split the string by spaces
-                            for (int i = 0; i < number_of_resources; i++) { // parse each string element and add it to the array
-                                vector_available.add(i, Integer.parseInt(numbers_as_string[i]));
-                            }
-                        }
+                        case 5 -> populateVectorFromTxt(vector_available, line);
                         //  A i : 1 x m request vector
-                        case 6 -> matrix_request.populateMatrixFromTxt(br, line, true);
+                        case 6 -> populateVectorFromTxt(vector_request, line);
                         default -> out.printf("Something went wrong: %s\n", line);
                     }
-                    data_section++;
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
+        Matrix matrix_need = Matrix.differenceOfMatrices(matrix_max, matrix_allocation); // n x m need matrix
+
         // Display all data gathered from txt
         out.println("\t-- The data this simulation will be running --\n");
-        out.printf("Number of Processes: %d\n", number_of_processes);
-        out.printf("Number of Resources: %d\n", number_of_resources);
+        out.printf("There are %d processes in the system.\n", Matrix.processes);
+        out.printf("There are %d resource types.\n", Matrix.resources);
         matrix_allocation.printMatrix("Allocation");
         matrix_max.printMatrix("Max");
         matrix_need.printMatrix("Need");
         printVector("Available", vector_available);
 
         // SAFETY CHECK
-        Matrix copyAllocation = matrix_allocation.clone();
+        Matrix copyAllocation = matrix_allocation.deepCopy();
         checkSystemSafety(copyAllocation, matrix_need, vector_available);
         if (systemIsSafe(copyAllocation, matrix_need, vector_available)) {
-            out.println(GREEN + "\nThe system is safe" + RESET);
+            out.println(GREEN + "\nTHE SYSTEM IS IN A SAFE STATE!" + RESET);
         } else {
-            out.println(RED + "\nThe system is NOT safe" + RESET);
+            out.println(RED + "\nTHE SYSTEM IS NOT IN A SAFE STATE!" + RESET);
         }
-        copyAllocation = null; // Set the reference to null we no longer need this
 
         // Echo the request vector.  Label the process making the request and resource types
-        matrix_request.printRequest();
+        printRequest(vector_request);
 
         // Compute if the request can be granted.
         try {
-            boolean areAllRequestsWithinClaim = checkRequestAgainstNeed(matrix_request, matrix_need);
-            out.printf("All requests are can %s be granted\n", (areAllRequestsWithinClaim ? "" : "NOT"));
+            boolean areAllRequestsWithinClaim = checkRequestAgainstNeed(vector_request, matrix_need);
+            out.printf("THE REQUEST CAN %s BE GRANTED!\n", (areAllRequestsWithinClaim ? "" : RED + "NOT" + RESET));
         } catch (IllegalArgumentException e) {
             out.println(e.getMessage());
         }
 
         // Compute the new available vector
-        printVector("*NEW* Available", vector_available);
+        printVector("New Available", vector_available);
     }
 
     // The maximum number of loops to check if remaining resources-
@@ -130,7 +112,7 @@ public class Main {
         boolean noResourcesRemaining = true;
         for (int i = 0; i < Matrix.processes; i++) {
             for (int j = 0; j < Matrix.resources; j++) {
-                int resource_x_count = allocation.getData().get(i).get(j);
+                int resource_x_count = allocation.data.get(i).get(j);
                 if (resource_x_count != 0) {
                     noResourcesRemaining = false;
                     return false;
@@ -149,7 +131,7 @@ public class Main {
 
             // ALL need resource X must be <= ALL available resource X
             for (int j = 0; j < Matrix.resources; j++) {
-                int resource_x = need.getData().get(i).get(j);
+                int resource_x = need.data.get(i).get(j);
                 int available_x = available.get(j);
                 availableResourcesExist.set(j, (resource_x <= available_x));
             }
@@ -158,8 +140,8 @@ public class Main {
             boolean sufficientAvailableResources = availableResourcesExist.stream().allMatch(b -> b.equals(true));
             if (sufficientAvailableResources) {
                 for (int l = 0; l < Matrix.resources; l++) {
-                    int resources_returned = allocation.getData().get(i).get(l);
-                    allocation.getData().get(i).set(l, 0);
+                    int resources_returned = allocation.data.get(i).get(l);
+                    allocation.data.get(i).set(l, 0);
                     int available_x = available.get(l);
                     available.set(l, (available_x + resources_returned));
                 }
@@ -170,7 +152,7 @@ public class Main {
     }
 
     public static void printVector(String title, ArrayList<Integer> vector) {
-        out.printf("\n%s Vector:\n", title);
+        out.printf("\nThe %s Vector is...\n", title);
         // ANSI escape sequence for underline
         String underlineStart = "\u001B[4m";
         String underlineEnd = "\u001B[0m";
@@ -182,30 +164,51 @@ public class Main {
         out.println();
     }
 
-
     // TRUE if request of Process i is <= to Need of Process i
-    public static boolean checkRequestAgainstNeed(Matrix request, Matrix need) {
+    // assume only 1 request (For loop not required for 1 iteration)
+    public static boolean checkRequestAgainstNeed(ArrayList<Integer> request, Matrix need) {
         boolean allRequestsGood = true;
-        for (int y = 0; y < request.getData().size(); y++) {
-            // [3:1 5 6 3] -> id = 3
-            int request_process_id = request.getData().get(y).getFirst();
-            ArrayList<Integer> request_x = request.getData().get(y);
-            if (request_process_id > need.processes) {
-                throw new IllegalArgumentException(String.format("\n%sProcess ID %d out of range of Matrix need.processes\n%s%s", RED, request_process_id, request_x, RESET));
+        // [3:1 5 6 3] -> id = 3
+        int request_process_id = request.getFirst();
+        if (request_process_id > Matrix.processes) {
+            throw new IllegalArgumentException(String.format("\n%sProcess ID %d out of range of Matrix need.processes\n%s%s", RED, request_process_id, request, RESET));
+        }
+        ArrayList<Integer> need_x = need.data.get(request_process_id - 1);
+        ArrayList<Boolean> result = new ArrayList<>();
+        for (int i = 0; i < need_x.size(); i++) {
+            result.add(request.get(i + 1) <= need_x.get(i));
+        }
+        for (Boolean value : result) {
+            if (!value) {
+                allRequestsGood = false;
+                break;
             }
-            ArrayList<Integer> need_x = need.getData().get(request_process_id - 1);
-            ArrayList<Boolean> result = new ArrayList<>();
-            for (int i = 0; i < need_x.size(); i++) {
-                result.add(request_x.get(i + 1) <= need_x.get(i));
-            }
-            for (Boolean value : result) {
-                if (!value) {
-                    allRequestsGood = false;
-                    break;
-                }
-            }
-            out.printf("Request of [p%d] %s\n", request_process_id, (allRequestsGood ? "Good" : "Bad"));
         }
         return allRequestsGood;
+    }
+
+    // populates vector with data from txt
+    // @Pre - vector must be size 0
+    public static void populateVectorFromTxt(ArrayList<Integer> vector, String line) {
+        String[] numbers_as_string = line.split("\\s+|:");
+        // {process id, requested A, requested B, requested C, requested D}
+        // split the string by spaces
+        // E.g. "3:6 7 4 3" -> [3, 6, 7, 4, 3]
+        for (String s : numbers_as_string) {
+            vector.add(Integer.parseInt(s));
+        }
+    }
+
+    // @Pre - assumes only 1 request
+    public static void printRequest(ArrayList<Integer> vector) {
+        out.print("\nThe Request Vector is...\n  ");
+        for (int i = 'A'; i < vector.size() - 1 + 'A'; i++, out.print(underlineStart + (char) (i - 1) + underlineEnd + " "))
+            ;
+        out.printf("\n%d:", vector.getFirst());
+        // for every resource
+        for (int j = 1; j < vector.size(); j++) {
+            out.print(vector.get(j) + " ");
+        }
+        out.println("\n");
     }
 }
