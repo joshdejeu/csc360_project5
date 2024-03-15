@@ -161,9 +161,9 @@ public class Matrix {
      * @return Matrix
      * @apiNote Can be used as a chain method
      * e.g. matrix.updateMatrixSize().somethingElse()
-     * @title Update Matrix Size
+     * @title Update Size
      */
-    public Matrix updateMatrixSize() {
+    public Matrix updateSize() {
         this.data = new Matrix(processes, resources).data;
         return this;
     }

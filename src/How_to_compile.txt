@@ -1,0 +1,16 @@
+> javac File1.java File2.java
+> java File1
+
+
+
+The folder files should look like this before each command
+1. 
+File1.java 
+File2.java
+
+2.
+File1.java 
+File2.java
+File1.class
+File2.class
+ 
