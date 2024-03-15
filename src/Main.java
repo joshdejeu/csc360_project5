@@ -53,11 +53,11 @@ public class Main {
         int data_section = 1; // a "section" is in-between empty lines in the txt file
 
         // (initially empty while we find n and m)
-        Matrix matrix_allocation = new Matrix(0, 0); // n x m allocation matrix
-        Matrix matrix_max = new Matrix(0, 0); // n x m max matrix
+        Matrix m_allocation = new Matrix(0, 0); // n x m allocation matrix
+        Matrix m_max = new Matrix(0, 0); // n x m max matrix
 
-        ArrayList<Integer> vector_available = new ArrayList<>(0); // A 1 x m available vector
-        ArrayList<Integer> vector_request = new ArrayList<>(0); // A i : 1 x m request vector
+        ArrayList<Integer> v_available = new ArrayList<>(0); // A 1 x m available vector
+        ArrayList<Integer> v_request = new ArrayList<>(0); // A i : 1 x m request vector
 
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
@@ -71,13 +71,13 @@ public class Main {
                         case 2 -> Matrix.resources = Integer.parseInt(line);
                         // Resize matrices because we now know n AND m
                         // An n x m allocation matrix
-                        case 3 -> matrix_allocation.updateSize().populateMatrixFromTxt(br, line);
+                        case 3 -> m_allocation.updateSize().populateMatrixFromTxt(br, line);
                         // An n x m max matrix
-                        case 4 -> matrix_max.updateSize().populateMatrixFromTxt(br, line);
+                        case 4 -> m_max.updateSize().populateMatrixFromTxt(br, line);
                         // A 1 x m available vector
-                        case 5 -> populateVectorFromString(vector_available, line);
+                        case 5 -> populateVectorFromString(v_available, line);
                         //  A i : 1 x m request vector
-                        case 6 -> populateVectorFromString(vector_request, line);
+                        case 6 -> populateVectorFromString(v_request, line);
                         default -> out.printf("Something went wrong: %s\n", line);
                     }
                 }
@@ -87,25 +87,25 @@ public class Main {
         }
 
         // Subtract allocation from max
-        Matrix matrix_need = Matrix.differenceOfMatrices(matrix_max, matrix_allocation); // n x m need matrix
+        Matrix m_need = Matrix.differenceOfMatrices(m_max, m_allocation); // n x m need matrix
 
         // Display all data gathered from txt
         out.printf("There are %d processes in the system.\n\n", Matrix.processes);
         out.printf("There are %d resource types.\n", Matrix.resources);
-        matrix_allocation.printMatrix("Allocation");
-        matrix_max.printMatrix("Max");
-        matrix_need.printMatrix("Need");
-        printVector("Available", vector_available);
+        m_allocation.printMatrix("Allocation");
+        m_max.printMatrix("Max");
+        m_need.printMatrix("Need");
+        printVector("Available", v_available);
 
         // SAFETY CHECK
-        Matrix deepCopyAllocation = Matrix.deepCopy(matrix_allocation);
-        ArrayList<Integer> deepCopyAvailableResources = new ArrayList<>(vector_available);
-        checkSystemSafety(deepCopyAllocation, matrix_need, deepCopyAvailableResources);
-        boolean systemIsSafe = systemIsSafe(deepCopyAllocation, matrix_need, deepCopyAvailableResources);
+        Matrix deepCopyAllocation = Matrix.deepCopy(m_allocation);
+        ArrayList<Integer> deepCopyAvailableResources = new ArrayList<>(v_available);
+        checkSystemSafety(deepCopyAllocation, m_need, deepCopyAvailableResources);
+        boolean systemIsSafe = systemIsSafe(deepCopyAllocation, m_need, deepCopyAvailableResources);
         out.printf("\n%sTHE SYSTEM IS %sIN A SAFE STATE!%s\n", (systemIsSafe ? GREEN : RED), (systemIsSafe ? "" : "NOT "), RESET);
 
         // Echo the request vector.  Label the process making the request and resource types
-        printRequest(vector_request);
+        printRequest(v_request);
 
         // Compute if the request can be granted.
         // Using Resource-Request Algorithm for Process Pi
@@ -113,21 +113,21 @@ public class Main {
 //      Step 1
         boolean step1 = false;
         try {
-            step1 = requestLessOrEqualToNeed(vector_request, matrix_need);
+            step1 = requestLessOrEqualToNeed(v_request, m_need);
         } catch (IllegalArgumentException e) {
             out.println(e.getMessage());
             System.exit(1);
         }
 //      Step2
-        boolean step2 = awaitResources(vector_request, vector_available, matrix_allocation, matrix_max, matrix_need);
+        boolean step2 = awaitResources(v_request, v_available, m_allocation, m_max, m_need);
 
         out.printf("%sTHE REQUEST CAN %sBE GRANTED!%s\n", ((step1 && step2) ? GREEN : RED), ((step1 && step2) ? "" : "NOT "), RESET);
 
         // Vector has been altered in previous steps
-        printVector("Available", vector_available);
+        printVector("Available", v_available);
 
-//        matrix_allocation.printMatrix("New allocation"); // uncomment to see the new Allocation matrix
-//        matrix_need.printMatrix("New Need"); // uncomment to see the new Need matrix
+//        m_allocation.printMatrix("New allocation"); // uncomment to see the new Allocation matrix
+//        m_need.printMatrix("New Need"); // uncomment to see the new Need matrix
     }
 
     /**
