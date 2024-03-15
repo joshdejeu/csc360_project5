@@ -1,9 +1,9 @@
 /**
- * Author: Josh Dejeu
- * Course: CSC360/660 Spring 2024
- * Project Name and Title: Project #5: Implementation of Banker's Algorithm
- * Due Date: Mar 18, 2024 11:59 PM
- * Instructor: Siming Liu
+ * @author Josh Dejeu
+ * @course CSC360/660 Spring 2024
+ * @project Project #5 - Implementation of Banker's Algorithm
+ * @due Date Mar 18, 2024 11:59 PM
+ * @instructor: Siming Liu
  * <p>
  * -----Project Environment Details-----
  * <ul>
