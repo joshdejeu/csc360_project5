@@ -119,7 +119,7 @@ public class Main {
             System.exit(1);
         }
 //      Step2
-        boolean step2 = awaitResources(v_request, v_available, m_allocation, m_max, m_need);
+        boolean step2 = awaitResources(v_request, v_available, m_allocation, m_need);
 
         out.printf("%sTHE REQUEST CAN %sBE GRANTED!%s\n", ((step1 && step2) ? GREEN : RED), ((step1 && step2) ? "" : "NOT "), RESET);
 
@@ -183,12 +183,11 @@ public class Main {
      * @param request    Vector of process requester and resources
      * @param available  Vector of available resources
      * @param allocation Matrix of resources allocated to a process
-     * @param max        Matrix of maximum resources to a process
      * @param need       Matrix of resources needed to reach max
      * @return boolean TRUE if resources were allocated to requester
      * @title Await Resources
      */
-    public static boolean awaitResources(ArrayList<Integer> request, ArrayList<Integer> available, Matrix allocation, Matrix max, Matrix need) {
+    public static boolean awaitResources(ArrayList<Integer> request, ArrayList<Integer> available, Matrix allocation, Matrix need) {
         boolean step2 = allValuesLessThanOrEqual(request, available);
         if (!step2) {
             // Wait for resources to be free
