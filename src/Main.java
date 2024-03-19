@@ -145,7 +145,7 @@ public class Main {
     public static boolean requestLessOrEqualToNeed(ArrayList<Integer> request, Matrix need) throws IllegalArgumentException {
         int request_process_id = request.getFirst();
         if (request_process_id >= Matrix.processes) {
-            throw new IllegalArgumentException(String.format("\n%sProcess ID %d out of range of Matrix need.processes%s%s\n", RED, request_process_id, (Matrix.processes - 1), RESET));
+            throw new IllegalArgumentException(String.format("\n%sProcess ID %d out of range of Matrix need.processes %s%s\n", RED, request_process_id, (Matrix.processes - 1), RESET));
         }
         if (allValuesLessThanOrEqual(request, need.data.get(request_process_id))) {
             return true;
