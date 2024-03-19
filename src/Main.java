@@ -138,14 +138,19 @@ public class Main {
      * @param request Vector of process requester and resources
      * @param need    Matrix of process needed to reach max
      * @return boolean TRUE if request &#8804 need
+     * @throws IllegalArgumentException Process Requester ID too larger and out of bounds
      * @throws IllegalArgumentException Process requested more resources than its max
      * @title Request Less or Equal To Need
      */
     public static boolean requestLessOrEqualToNeed(ArrayList<Integer> request, Matrix need) throws IllegalArgumentException {
-        if (allValuesLessThanOrEqual(request, need.data.get(request.getFirst()))) {
+        int request_process_id = request.getFirst();
+        if (request_process_id >= Matrix.processes) {
+            throw new IllegalArgumentException(String.format("\n%sProcess ID %d out of range of Matrix need.processes\n%s%s", RED, request_process_id, (Matrix.processes - 1), RESET));
+        }
+        if (allValuesLessThanOrEqual(request, need.data.get(request_process_id))) {
             return true;
         } else {
-            throw new IllegalArgumentException(String.format("Process [%s] exceeds the initial claimed maximum amount of resources.", request.getFirst()));
+            throw new IllegalArgumentException(String.format("%sProcess [%s] exceeds the initial claimed maximum amount of resources.%s", RED, request.getFirst(), RESET));
         }
     }
 
@@ -390,10 +395,6 @@ public class Main {
         boolean allRequestsGood = true;
         try {
             // [3:1 5 6 3] -> id = 3
-            int request_process_id = list1.getFirst();
-            if (request_process_id > Matrix.processes) {
-                throw new IllegalArgumentException(String.format("\n%sProcess ID %d out of range of Matrix need.processes\n%s%s", RED, request_process_id, list1, RESET));
-            }
             ArrayList<Boolean> result = new ArrayList<>();
             for (int i = 0; i < Matrix.resources; i++) {
                 int request_resource_x = list1.get(i + 1);
